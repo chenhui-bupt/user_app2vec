@@ -10,7 +10,7 @@ except:
     import findspark
 findspark.init()
 from pyspark import *
-from pyspark import SparkContext as sc
+from pyspark import SparkContext
 
 # ---
 # 1. 预处理
@@ -18,7 +18,7 @@ from pyspark import SparkContext as sc
 # '柚宝宝孕育'App数据有问题，应该删掉
 # 
 # ---
-
+sc = SparkContext('local', '4hin2vec')
 usage_file = '../resources/data0117'
 usage_rdd = sc.textFile(usage_file).map(lambda x: x.split("|"))
 usage_rdd = usage_rdd.filter(lambda x: x[2] != '柚宝宝孕育')
