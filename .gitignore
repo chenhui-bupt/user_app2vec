@@ -12,13 +12,13 @@ resources/data*
 resources/*.pkl
 
 # network_embedding
-network_embedding/graph_resources/
-network_embedding/embeddings_output/
+network_embedding/graph_resources/*
+network_embedding/embeddings_output/*
 network_embedding/metastore_db
 network_embedding/.ipynb_checkpoints
 network_embedding/derby.log
 
 # recommendation
-recommendation/output
+recommendation/output/*
 recommendation/data.csv
 
