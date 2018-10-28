@@ -22,5 +22,5 @@ network_embedding/hin2vec
 
 # recommendation
 recommendation/output/*
-recommendation/data.csv
+recommendation/data/*
 
