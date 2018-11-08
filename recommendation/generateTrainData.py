@@ -12,6 +12,8 @@ from pyspark import *
 sc = SparkContext.getOrCreate()
 
 
+# TODO app2id和cat2id用来做onehot或者multihot
+
 def load_data_to_df(file):
     # file: '../resources/data0117/'
     usage_rdd = sc.textFile(file).map(lambda x: x.split('|'))
