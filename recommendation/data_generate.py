@@ -1,33 +1,8 @@
-# -*- coding:utf-8 -*-
+# -*- coding: utf-8 -*-
 import os
-import sys
-import pandas as pd
-import numpy as np
 import random
-import pickle
-
-
-def get_node2id(file):
-    if not file:
-        file = '../resources/node2id.pkl'
-    node2id = pickle.load(open(file, 'rb'))
-    print('load node2id from %s, it has %s nodes' % (file, len(node2id)))
-    return node2id
-
-
-def to_categorical(y, num_class=None):  # onehot or multihot
-    '''
-
-    :param y: y.shape=(None,) or (None, None), 也就是onehot或者multihot
-    :param num_class: 类别数
-    :return:
-    '''
-    if not num_class:
-        num_class = np.max(y) + 1
-    out = np.zeros([len(y), num_class])
-    for i in range(len(y)):
-        out[i, y[i]] = 1
-    return out
+import numpy as np
+import pandas as pd
 
 
 def get_embeddings(file_name, node2id=None):  # 每个节点的embedding向量，给dnn的lookup用
@@ -61,20 +36,19 @@ def random_embedding(node2id, embedding_dim):
 def batch_yield(data, batch_size, shuffle=False):
     """
 
-    :param data:
+    :param data: matrix, [total_samples, num_features]
     :param batch_size:
     :param shuffle:
-    :return:
+    :return: batches of [batch_size, (feat1, feat2, ..., featn, label)]
     """
     if shuffle:  # 对数据进行shuffle
         random.shuffle(data)
-    batch = []
+    feats, labels = [], []
     for d in data:
-        batch.append(d)
-        if len(batch) == batch_size:  # 当其够一个batch时，就yield出去
-            yield batch
-            batch = []
-    if len(batch) != 0:  # 最后不能整除的余数部分，也要yield
-        yield batch
-
-
+        feats.append(d[:-1])
+        labels.append(d[-1])
+        if len(feats) == batch_size:  # 当其够一个batch时，就yield出去
+            yield feats, labels
+            feats, labels = [], []
+    if len(feats) != 0:  # 最后不能整除的余数部分，也要yield
+        yield feats, labels
