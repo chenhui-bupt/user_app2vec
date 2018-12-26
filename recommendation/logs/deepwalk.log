@@ -1,0 +1,18 @@
+Using Spark's default log4j profile: org/apache/spark/log4j-defaults.properties
+Setting default log level to "WARN".
+To adjust logging level use sc.setLogLevel(newLevel). For SparkR, use setLogLevel(newLevel).
+18/10/28 20:55:14 WARN NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
+18/10/28 20:55:14 WARN Utils: Your hostname, travel3 resolves to a loopback address: 127.0.1.1; using 192.168.30.100 instead (on interface eno1)
+18/10/28 20:55:14 WARN Utils: Set SPARK_LOCAL_IP if you need to bind to another address
+[Stage 0:>                                                          (0 + 7) / 7][Stage 0:========>                                                  (1 + 6) / 7]                                                                                the raw usage data have 949908 records
+id         object
+hour        int64
+app        object
+app_cat    object
+times       int64
+dtype: object
+54
+Traceback (most recent call last):
+  File "generateTrainData.py", line 160, in <module>
+    print('\u6bcf\u4e2a\u5c0f\u65f6\u7528\u6237\u4f7f\u7528App\u7684\u6570\u91cf\u7edf\u8ba1\uff1a')
+UnicodeEncodeError: 'ascii' codec can't encode characters in position 0-7: ordinal not in range(128)

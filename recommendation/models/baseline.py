@@ -8,7 +8,7 @@ from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_sc
 from sklearn.model_selection import train_test_split
 
 
-data = pd.read_csv('./data/deepwalk.csv')
+data = pd.read_csv('../data/deepwalk.csv')
 data.drop('app_cat', inplace=True)
 X = data.iloc[:, 4:].values
 y = data['click'].values

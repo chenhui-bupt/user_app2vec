@@ -104,7 +104,7 @@ def hadamard(vec1, vec2):
 def get_embeddings(file_name, id2node=None):
     embeddings = {}
     embeddings_file = os.path.join("../network_embedding/embeddings_output/", file_name)
-    with open(embeddings_file, 'r') as f:
+    with open(embeddings_file, encoding='gbk') as f:
         for line in f:
             splits = line.split()
             if len(splits) == 2:
@@ -140,7 +140,7 @@ def add_features(data):
     # 该特征是通过对User-App网络进行网络表示学习得到节点的embedding表示，不仅包含低维稠密的信息，更包含节点之间的语义信息
     node2id = pickle.load(open('../resources/node2id.pkl', 'rb'))
     id2node = {v: k for k, v in node2id.items()}  # inversed index to node
-    embeddings = get_embeddings('deepwalk.embeddings', id2node=id2node)
+    embeddings = get_embeddings('node_vectors.txt', id2node=None)
     user_apps = data.loc[:, ['id', 'app']].drop_duplicates()  # 去重避免重复计算
     vectors = list(map(lambda x: hadamard(embeddings[x[0]], embeddings[x[1]]), user_apps.values))
     vectors = pd.DataFrame(vectors, columns=['emb_%s' % i for i in range(128)])
@@ -157,7 +157,7 @@ if __name__ == '__main__':
     positive_apps = get_current_apps(data)
     negative_apps = get_negative_apps(positive_apps)
     temp = positive_apps['positive_apps'].apply(lambda x: len(x))
-    print('每个小时用户使用App的数量统计：')
+    # print('每个小时用户使用App的数量统计：')
     print(temp.describe())
 
     # 正例样本集
@@ -171,7 +171,7 @@ if __name__ == '__main__':
     data = pd.concat([pos, neg], axis=0)
     print('pos: %s, neg: %s, total: %s' % (len(pos), len(neg), len(data)))
     data = add_features(data)
-    data.to_csv('./data/deepwalk.csv', index=False)
+    data.to_csv('./data/hin2vec.csv', index=False)
 
 
 
