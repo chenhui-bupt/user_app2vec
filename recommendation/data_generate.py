@@ -5,6 +5,19 @@ import numpy as np
 import pandas as pd
 
 
+def train_test_split(file, train_size):
+    train_dataset = []
+    test_dataset = []
+    with open(file) as f:
+        for line in f:
+            splits = line.split(',')
+            if random.random < train_size:
+                train_dataset.append(list(map(int, splits)))
+            else:
+                test_dataset.append(list(map(int, splits)))
+    return train_dataset, test_dataset
+
+
 def get_embeddings(file_name, node2id=None):  # 每个节点的embedding向量，给dnn的lookup用
     embeddings = {}
     embeddings_file = os.path.join("../network_embedding/embeddings_output/", file_name)
