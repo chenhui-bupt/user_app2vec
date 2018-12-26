@@ -216,17 +216,15 @@ def generateTrainData(data):
     all_data = pd.merge(all_data, app_attribute, on=['app'], how='left')
 
     # 4, graph embedding特征存放nodeid，留在tf.nn.lookup查询.
-
-    # 把所有标称属性转换为id属性，并将一些特征onehot或multihot
-    node2id = pickle.load(open('../resources/node2id.pkl', 'rb'))
+    node2id = get_node2id()
     all_data['id'] = all_data['id'].apply(lambda x: node2id[x][0])
     all_data['app'] = all_data['app'].apply(lambda x: node2id[x][0])
     cols = list(all_data.columns)  # reorder the columns
     cols.pop(cols.index('id'))
     cols.pop(cols.index('app'))
     cols.pop(cols.index('click'))
-    cols.insert(0, 'id')
     cols.insert(0, 'app')
+    cols.insert(0, 'id')
     cols.append('click')
     all_data = all_data.loc[:, cols]
     print(all_data.head())
