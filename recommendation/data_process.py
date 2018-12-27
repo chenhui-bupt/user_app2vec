@@ -50,7 +50,7 @@ def node2id(data, dump=False):
     return node2id
 
 
-def get_node2id(file):
+def get_node2id(file=None):
     if not file:
         file = '../resources/node2id.pkl'
     node2id = pickle.load(open(file, 'rb'))
@@ -227,8 +227,8 @@ def generateTrainData(data):
     cols.insert(0, 'id')
     cols.append('click')
     all_data = all_data.loc[:, cols]
-    print(all_data.head())
-    print(list(all_data.columns))
+    #print(all_data.head())
+    #print(list(all_data.columns))
     return all_data
 
 
@@ -236,4 +236,4 @@ if __name__ == '__main__':
     data = load_data_to_df('../resources/data0117')
     node2id(data, True)
     all_data = generateTrainData(data)
-    # all_data.to_csv('./all_data.csv', index=False)
+    all_data.to_csv('./all_data.csv', index=False)
