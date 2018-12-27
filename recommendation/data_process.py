@@ -50,7 +50,7 @@ def node2id(data, dump=False):
     return node2id
 
 
-def get_node2id(file):
+def get_node2id(file=None):
     if not file:
         file = '../resources/node2id.pkl'
     node2id = pickle.load(open(file, 'rb'))
@@ -210,6 +210,7 @@ def generateTrainData(data):
 
     # 3, add app category feature and other App attribute information
     app_attribute = get_app_attribute(data)
+    app_attribute.to_csv('../resources/app.txt', index=False)
     app_attribute.drop(['name', 'cat', 'description'], axis=1, inplace=True)
     app_attribute = pd.get_dummies(app_attribute, columns=['app_cat', 'developer'])
     # TODO app_attribute get_dummies()
@@ -236,4 +237,4 @@ if __name__ == '__main__':
     data = load_data_to_df('../resources/data0117')
     node2id(data, True)
     all_data = generateTrainData(data)
-    # all_data.to_csv('./all_data.csv', index=False)
+    all_data.to_csv('./data/all_data.csv', index=False)

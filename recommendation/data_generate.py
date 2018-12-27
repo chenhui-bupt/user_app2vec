@@ -12,36 +12,41 @@ def train_test_split(file, train_size):
         for line in f:
             splits = line.split(',')
             if random.random < train_size:
-                train_dataset.append(list(map(int, splits)))
+                train_dataset.append(list(map(float, splits)))
             else:
-                test_dataset.append(list(map(int, splits)))
+                test_dataset.append(list(map(float, splits)))
     return train_dataset, test_dataset
 
 
 def get_embeddings(file_name, node2id=None):  # 每个节点的embedding向量，给dnn的lookup用
-    embeddings = {}
+    """
+    embeddings的节点有的存成id, 有的是名称需要node2id
+    :param file_name: embeddings file
+    :param node2id: node:[id, type, count]
+    :return:
+    """
     embeddings_file = os.path.join("../network_embedding/embeddings_output/", file_name)
     with open(embeddings_file, 'r') as f:
+        shape = tuple(map(int, f.readline().split()))
+        print('node: %s, embedding_size: %s' % shape)
+        embeddings = np.zeros(shape)
         for line in f:
             splits = line.split()
-            if len(splits) == 2:
-                print('node: %s, embedding_size: %s' % tuple(splits))
-                continue
             if node2id:
-                embeddings[node2id[splits[0]]] = list(map(float, splits[1:]))
+                embeddings[node2id[splits[0]][0]] = list(map(float, splits[1:]))
             else:
                 embeddings[int(splits[0])] = list(map(float, splits[1:]))
     return embeddings
 
 
-def random_embedding(node2id, embedding_dim):
+def random_embedding(nodesize, embedding_dim):
     """
 
-    :param vocab:
+    :param nodesize:
     :param embedding_dim:
     :return:
     """
-    embedding_mat = np.random.uniform(-0.25, 0.25, (len(node2id), embedding_dim))  # 均匀初始化
+    embedding_mat = np.random.uniform(-0.25, 0.25, (nodesize, embedding_dim))  # 均匀初始化
     embedding_mat = np.float32(embedding_mat)
     return embedding_mat
 
@@ -61,7 +66,7 @@ def batch_yield(data, batch_size, shuffle=False):
         feats.append(d[:-1])
         labels.append(d[-1])
         if len(feats) == batch_size:  # 当其够一个batch时，就yield出去
-            yield feats, labels
+            yield np.array(feats), np.array(labels)
             feats, labels = [], []
     if len(feats) != 0:  # 最后不能整除的余数部分，也要yield
-        yield feats, labels
+        yield np.array(feats), np.array(labels)

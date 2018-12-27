@@ -6,24 +6,27 @@ import tensorflow as tf
 from recommendation.data_generate import batch_yield
 
 class DNN(object):
-    def __init__(self, config, batch_size, node_embedding, optimizer, epoch_num):
+    def __init__(self, config, node_embeddings, batch_size, optimizer, learning_rate, epoch_num):
         self.config = config
         self.batch_size = batch_size
-        self.node_embedding = node_embedding
+        self.node_embeddings = node_embeddings
         self.update_embedding = False
         self.num_classes = 2  # 二分类
         self.clip = False
         self.clip_value = 5.0
         self.optimizer = optimizer
+        self.learning_rate = learning_rate
         self.epoch_num = epoch_num
-        self.save_path = '../output/dnn/'
+        self.save_path = '../output/'
+        self.build_graph()
 
     def build_graph(self):
+        print('building tensorflow graph ...')
         self.add_placeholders()
         self.lookup_input()
         self.fc_layer()
-        self.loss()
-        self.train_step()
+        self.loss_op()
+        self.train_step(self.loss, self.learning_rate)
         self.variables_init_op()
 
     def add_placeholders(self):
@@ -32,19 +35,19 @@ class DNN(object):
         self.y_input = tf.placeholder(tf.int32, [None, ], name='y_input')  # y是labels，不是onehot形式
 
     def lookup_input(self):
-        with tf.variable_scope('node_embedding'):
-            _node_embedding = tf.get_variable('node_embedding', shape=self.node_embedding.shape,
-                                                  initializer=tf.constant_initializer(self.node_embedding),
+        with tf.variable_scope('node_embeddings'):
+            _node_embeddings = tf.get_variable('node_embeddings', shape=self.node_embeddings.shape,
+                                                  initializer=tf.constant_initializer(self.node_embeddings),
                                                   trainable=self.update_embedding)
-        self.nodepair_embedding = tf.nn.embedding_lookup(
-            params=_node_embedding,
+        self.nodepair_embeddings = tf.nn.embedding_lookup(
+            params=_node_embeddings,
             ids=self.nodepair_input,
-            name='nodepair_embedding'
+            name='nodepair_embeddings'
         )
 
     def fc_layer(self):
         with tf.name_scope('fc1'):
-            inputs = tf.concat([self.nodepair_embedding, self.X_input], axis=-1)
+            inputs = tf.concat([self.nodepair_embeddings, self.X_input], axis=-1)
             self.input_size = inputs.shape[0]
             self.w1 = tf.get_variable(name='w1', shape=[self.input_size, 512],
                                       initializer=tf.contrib.layers.xavier_initializer(), dtype=tf.float32)
@@ -67,7 +70,7 @@ class DNN(object):
             self.logits = tf.matmul(self.l2, self.w3) + self.b3
             self.y = tf.nn.sigmoid(self.logits)  # predictions
 
-    def loss(self):
+    def loss_op(self):
         self.loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels=self.y_input, logits=self.logits))
 
     def train_step(self, loss, learning_rate):
@@ -108,7 +111,7 @@ class DNN(object):
         :return:
         """
         saver = tf.train.Saver(tf.global_variables())
-        with tf.Session(config=self.config) as sess:
+        with tf.Session() as sess:  # session config
             sess.run(self.init_op)  # variable init op
             self.add_summary_op(sess)
             for epoch in range(self.epoch_num):
@@ -117,7 +120,7 @@ class DNN(object):
                 batches = batch_yield(train_dataset, self.batch_size, shuffle=True)
                 assert num_batches == len(batches), 'hhh, error'
                 for i, (X_inputs, labels) in enumerate(batches):
-                    # sys.stdout.write(' processing: {} batch / {} batches.'.format(i + 1, num_batches) + '\r')  # 回到行首
+                    sys.stdout.write(' processing: {} batch / {} batches.'.format(i + 1, num_batches) + '\r')  # 回到行首
                     feed_dict = {
                         self.nodepair_input: X_inputs[:, :2],
                         self.X_input: X_inputs[:, 2:],
@@ -127,17 +130,17 @@ class DNN(object):
                                                                 feed_dict=feed_dict)
                     self.file_writer.add_summary(_merged, _step)  # add summary
                     if i + 1 == num_batches:  # one epoch
-                        saver.save(sess, self.save_path + '/model', _step)
+                        saver.save(sess, self.save_path + '/model-', _step)
                     acc1 = self.evaluate_batch(self.logits, self.y_input, 'acc')
                     acc2 = self.eval_batch(self.logits, self.y_input)
                     auc = self.evaluate_batch(self.logits, self.y_input, 'auc')
                     print("batch:%s, acc1: %s, acc2: %s, auc: %s" % (i, acc1, acc2, auc))
                 self.test(test_dataset, sess)
 
-    def evaluate_batch(self, x, labels, mode):
+    def evaluate_batch(self, logits, labels, mode):
         """Evaluate the quality of the logits at predicting the label.
         Args:
-            x: Tensor, float
+            logits: Tensor, float
             labels: Labels tensor, float
             mode: Acc or Auc
         Returns:
@@ -145,12 +148,12 @@ class DNN(object):
         """
         with tf.name_scope("evaluate_batch"):
             if mode == 'acc':
-                predictions = tf.nn.sigmoid(x)
+                predictions = tf.nn.sigmoid(logits)
                 predict_pos = tf.greater(predictions, 0.5)
                 _, accuracy = tf.metrics.accuracy(labels, predict_pos)
                 return accuracy
             if mode == 'auc':
-                predictions = tf.nn.sigmoid(x)
+                predictions = tf.nn.sigmoid(logits)
                 _, auc = tf.metrics.auc(labels, predictions)
                 return auc
 
