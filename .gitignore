@@ -1,0 +1,26 @@
+.idea
+.DS_Store
+*.pkl
+*.zip
+*.rar
+metastore_db
+.ipynb_checkpoints
+derby.log
+
+# resources
+resources/data*
+resources/*.pkl
+
+# network_embedding
+network_embedding/graph_resources/*
+network_embedding/embeddings_output/*
+network_embedding/metastore_db
+network_embedding/.ipynb_checkpoints
+network_embedding/derby.log
+network_embedding/deepwalk
+network_embedding/hin2vec
+
+# recommendation
+recommendation/output/*
+recommendation/data/*
+
