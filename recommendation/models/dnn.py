@@ -17,7 +17,7 @@ class DNN(object):
         self.optimizer = optimizer
         self.learning_rate = learning_rate
         self.epoch_num = epoch_num
-        self.save_path = '../output/'
+        self.save_path = './output/'
         self.build_graph()
 
     def build_graph(self):
@@ -32,7 +32,7 @@ class DNN(object):
     def add_placeholders(self):
         self.nodepair_input = tf.placeholder(tf.int32, [None, 2], name='nodepair_input')  # user-app pair
         self.X_input = tf.placeholder(tf.float32, [None, 179], name='X_input')
-        self.y_input = tf.placeholder(tf.int32, [None, self.num_classes], name='y_input')  # y是labels，不是onehot形式
+        self.y_input = tf.placeholder(tf.float32, [None, self.num_classes], name='y_input')  # y是labels，不是onehot形式
 
     def lookup_input(self):
         with tf.variable_scope('node_embeddings'):
@@ -102,6 +102,12 @@ class DNN(object):
 
     def add_summary_op(self, sess):
         # TODO accuracy, auc等指标
+        self.acc1 = self.evaluate_op(self.logits, self.y_input, 'acc')
+        self.acc2 = self.eval_op(self.logits, self.y_input)
+        self.auc = self.evaluate_op(self.logits, self.y_input, 'auc')
+        tf.summary.scalar('acc1', self.acc1)
+        tf.summary.scalar('acc2', self.acc2)
+        tf.summary.scalar('auc', self.auc)
         tf.summary.scalar('loss', self.loss)
         self.merged = tf.summary.merge_all()
         self.file_writer = tf.summary.FileWriter(self.save_path + 'summary/', sess.graph)  # 保存图像
@@ -119,7 +125,6 @@ class DNN(object):
                 num_batches = (len(train_dataset) + self.batch_size - 1)//self.batch_size
                 # start_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
                 batches = batch_yield(train_dataset, self.batch_size, shuffle=True)
-                assert num_batches == len(batches), 'hhh, error'
                 for i, (X_inputs, labels) in enumerate(batches):
                     sys.stdout.write(' processing: {} batch / {} batches.'.format(i + 1, num_batches) + '\r')  # 回到行首
                     feed_dict = {
@@ -132,13 +137,11 @@ class DNN(object):
                     self.file_writer.add_summary(_merged, _step)  # add summary
                     if i + 1 == num_batches:  # one epoch
                         saver.save(sess, self.save_path + '/model-', _step)
-                    acc1 = self.evaluate_batch(self.logits, self.y_input, 'acc')
-                    acc2 = self.eval_batch(self.logits, self.y_input)
-                    auc = self.evaluate_batch(self.logits, self.y_input, 'auc')
+                    acc1, acc2, auc = sess.run([self.acc1, self.acc2, self.auc])
                     print("batch:%s, acc1: %s, acc2: %s, auc: %s" % (i, acc1, acc2, auc))
                 self.test(test_dataset, sess)
 
-    def evaluate_batch(self, logits, labels, mode):
+    def evaluate_op(self, logits, labels, mode):
         """Evaluate the quality of the logits at predicting the label.
         Args:
             logits: Tensor, float
@@ -158,7 +161,7 @@ class DNN(object):
                 _, auc = tf.metrics.auc(labels, predictions)
                 return auc
 
-    def eval_batch(self, logits, labels):
+    def eval_op(self, logits, labels):
         """
 
         :param logits: logits output of MLP, without softmax
@@ -166,7 +169,7 @@ class DNN(object):
         :return:
         """
         predictions = tf.argmax(logits, 1, name='predictions')
-        correct_predictions = tf.equal(tf.cast(predictions, tf.int32), labels)
+        correct_predictions = tf.equal(predictions, tf.cast(labels, tf.int64))
         accuracy = tf.reduce_mean(tf.cast(correct_predictions, tf.float32), name='accuracy')
         return accuracy
 

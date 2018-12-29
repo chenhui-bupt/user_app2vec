@@ -78,7 +78,7 @@ def batch_yield(data, batch_size, shuffle=False):
     feats, labels = [], []
     for d in data:
         feats.append(d[:-1])
-        labels.append(d[-1])
+        labels.append(int(d[-1]))
         if len(feats) == batch_size:  # 当其够一个batch时，就yield出去
             yield np.array(feats), to_categorical(np.array(labels), num_class=2)
             feats, labels = [], []
