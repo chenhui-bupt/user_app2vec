@@ -51,6 +51,19 @@ def random_embedding(nodesize, embedding_dim):
     embedding_mat = np.float32(embedding_mat)
     return embedding_mat
 
+def to_categorical(y, num_class=None):  # onehot or multihot
+    '''
+
+    :param y: type=numpy.array, y.shape=(None,) or (None, None), 也就是onehot或者multihot
+    :param num_class: 类别数
+    :return:
+    '''
+    if not num_class:
+        num_class = np.max(y) + 1
+    out = np.zeros([len(y), num_class])
+    for i in range(len(y)):
+        out[i, y[i]] = 1
+    return out
 
 def batch_yield(data, batch_size, shuffle=False):
     """
@@ -65,9 +78,9 @@ def batch_yield(data, batch_size, shuffle=False):
     feats, labels = [], []
     for d in data:
         feats.append(d[:-1])
-        labels.append(d[-1])
+        labels.append(int(d[-1]))
         if len(feats) == batch_size:  # 当其够一个batch时，就yield出去
-            yield np.array(feats), np.array(labels)
+            yield np.array(feats), to_categorical(np.array(labels), num_class=2)
             feats, labels = [], []
     if len(feats) != 0:  # 最后不能整除的余数部分，也要yield
-        yield np.array(feats), np.array(labels)
+        yield np.array(feats), to_categorical(np.array(labels), num_class=2)

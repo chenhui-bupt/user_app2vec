@@ -32,7 +32,7 @@ class DNN(object):
     def add_placeholders(self):
         self.nodepair_input = tf.placeholder(tf.int32, [None, 2], name='nodepair_input')  # user-app pair
         self.X_input = tf.placeholder(tf.float32, [None, 179], name='X_input')
-        self.y_input = tf.placeholder(tf.int32, [None, ], name='y_input')  # y是labels，不是onehot形式
+        self.y_input = tf.placeholder(tf.float32, [None, self.num_classes], name='y_input')  # y是labels，不是onehot形式
 
     def lookup_input(self):
         with tf.variable_scope('node_embeddings'):
@@ -49,8 +49,7 @@ class DNN(object):
     def fc_layer(self):
         with tf.name_scope('fc1'):
             inputs = tf.concat([self.nodepair_embeddings, self.X_input], axis=-1)
-            print(inputs.get_shape().as_list())
-            self.input_size = inputs.shape.as_list()[1]
+            self.input_size = inputs.get_shape().as_list()[1]
             self.w1 = tf.get_variable(name='w1', shape=[self.input_size, 512],
                                       initializer=tf.contrib.layers.xavier_initializer(), dtype=tf.float32)
             self.b1 = tf.get_variable(name='b1', shape=[512],
@@ -120,7 +119,6 @@ class DNN(object):
                 num_batches = (len(train_dataset) + self.batch_size - 1)//self.batch_size
                 # start_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
                 batches = batch_yield(train_dataset, self.batch_size, shuffle=True)
-                assert num_batches == len(batches), 'hhh, error'
                 for i, (X_inputs, labels) in enumerate(batches):
                     sys.stdout.write(' processing: {} batch / {} batches.'.format(i + 1, num_batches) + '\r')  # 回到行首
                     feed_dict = {
@@ -167,7 +165,7 @@ class DNN(object):
         :return:
         """
         predictions = tf.argmax(logits, 1, name='predictions')
-        correct_predictions = tf.equal(tf.cast(predictions, tf.int32), labels)
+        correct_predictions = tf.equal(predictions, tf.cast(labels, tf.int64))
         accuracy = tf.reduce_mean(tf.cast(correct_predictions, tf.float32), name='accuracy')
         return accuracy
 
@@ -183,7 +181,7 @@ class DNN(object):
             }
             predictions = sess.run([self.y], feed_dict=feed_dict)
             preds_list.extend(list(predictions[:, 0]))
-            labels_list.extend(labels)
+            labels_list.extend(list(labels[:, 0]))
         auc = self.auc_test(labels_list, preds_list)
         print(auc)
 
