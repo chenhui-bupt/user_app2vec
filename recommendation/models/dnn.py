@@ -31,7 +31,7 @@ class DNN(object):
 
     def add_placeholders(self):
         self.nodepair_input = tf.placeholder(tf.int32, [None, 2], name='nodepair_input')  # user-app pair
-        self.X_input = tf.placeholder(tf.float32, [None, None], name='X_input')
+        self.X_input = tf.placeholder(tf.float32, [None, 179], name='X_input')
         self.y_input = tf.placeholder(tf.int32, [None, ], name='y_input')  # y是labels，不是onehot形式
 
     def lookup_input(self):
@@ -49,7 +49,8 @@ class DNN(object):
     def fc_layer(self):
         with tf.name_scope('fc1'):
             inputs = tf.concat([self.nodepair_embeddings, self.X_input], axis=-1)
-            self.input_size = inputs.shape[0]
+            print(inputs.get_shape().as_list())
+            self.input_size = inputs.shape.as_list()[1]
             self.w1 = tf.get_variable(name='w1', shape=[self.input_size, 512],
                                       initializer=tf.contrib.layers.xavier_initializer(), dtype=tf.float32)
             self.b1 = tf.get_variable(name='b1', shape=[512],
