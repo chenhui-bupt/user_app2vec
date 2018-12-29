@@ -119,8 +119,8 @@ class DNN(object):
         """
         saver = tf.train.Saver(tf.global_variables())
         with tf.Session() as sess:  # session config
-            sess.run(self.init_op)  # variable init op
             self.add_summary_op(sess)
+            sess.run(self.init_op)  # variable init op
             for epoch in range(self.epoch_num):
                 num_batches = (len(train_dataset) + self.batch_size - 1)//self.batch_size
                 # start_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
@@ -153,8 +153,7 @@ class DNN(object):
         with tf.name_scope("evaluate_batch"):
             if mode == 'acc':
                 predictions = tf.nn.sigmoid(logits)
-                predict_pos = tf.greater(predictions, 0.5)
-                _, accuracy = tf.metrics.accuracy(labels, predict_pos)
+                _, accuracy = tf.metrics.accuracy(tf.argmax(labels, 1), tf.argmax(predictions, 1))
                 return accuracy
             if mode == 'auc':
                 predictions = tf.nn.sigmoid(logits)
@@ -168,8 +167,7 @@ class DNN(object):
         :param labels: labels, not one-hot
         :return:
         """
-        predictions = tf.argmax(logits, 1, name='predictions')
-        correct_predictions = tf.equal(predictions, tf.cast(labels, tf.int64))
+        correct_predictions = tf.equal(tf.argmax(logits, 1), tf.argmax(labels, 1))
         accuracy = tf.reduce_mean(tf.cast(correct_predictions, tf.float32), name='accuracy')
         return accuracy
 
