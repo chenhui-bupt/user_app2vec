@@ -31,8 +31,8 @@ class DNN(object):
 
     def add_placeholders(self):
         self.nodepair_input = tf.placeholder(tf.int32, [None, 2], name='nodepair_input')  # user-app pair
-        self.X_input = tf.placeholder(tf.float32, [None, None], name='X_input')
-        self.y_input = tf.placeholder(tf.int32, [None, ], name='y_input')  # y是labels，不是onehot形式
+        self.X_input = tf.placeholder(tf.float32, [None, 179], name='X_input')
+        self.y_input = tf.placeholder(tf.int32, [None, self.num_classes], name='y_input')  # y是labels，不是onehot形式
 
     def lookup_input(self):
         with tf.variable_scope('node_embeddings'):
@@ -49,7 +49,7 @@ class DNN(object):
     def fc_layer(self):
         with tf.name_scope('fc1'):
             inputs = tf.concat([self.nodepair_embeddings, self.X_input], axis=-1)
-            self.input_size = inputs.shape[0]
+            self.input_size = inputs.get_shape().as_list()[1]
             self.w1 = tf.get_variable(name='w1', shape=[self.input_size, 512],
                                       initializer=tf.contrib.layers.xavier_initializer(), dtype=tf.float32)
             self.b1 = tf.get_variable(name='b1', shape=[512],
@@ -182,7 +182,7 @@ class DNN(object):
             }
             predictions = sess.run([self.y], feed_dict=feed_dict)
             preds_list.extend(list(predictions[:, 0]))
-            labels_list.extend(labels)
+            labels_list.extend(list(labels[:, 0]))
         auc = self.auc_test(labels_list, preds_list)
         print(auc)
 
