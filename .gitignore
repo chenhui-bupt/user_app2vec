@@ -6,6 +6,7 @@
 metastore_db
 .ipynb_checkpoints
 derby.log
+__pycache__
 
 # resources
 resources/data*

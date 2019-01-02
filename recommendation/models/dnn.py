@@ -3,7 +3,8 @@ import sys
 import numpy as np
 import time
 import tensorflow as tf
-from data_generate import batch_yield
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score
+from data_generate import *
 
 class DNN(object):
     def __init__(self, config, node_embeddings, batch_size, optimizer, learning_rate, epoch_num):
@@ -21,7 +22,7 @@ class DNN(object):
         self.build_graph()
 
     def build_graph(self):
-        print('building tensorflow graph ...')
+        print('building graph ...')
         self.add_placeholders()
         self.lookup_input()
         self.fc_layer()
@@ -69,7 +70,7 @@ class DNN(object):
             self.b3 = tf.get_variable(name='b3', shape=[self.num_classes],
                                       initializer=tf.zeros_initializer(), dtype=tf.float32)
             self.logits = tf.matmul(self.l2, self.w3) + self.b3
-            self.y = tf.nn.sigmoid(self.logits)  # predictions
+            self.y_scores = tf.nn.softmax(self.logits)  # predictions
 
     def loss_op(self):
         self.loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels=self.y_input, logits=self.logits))
@@ -102,12 +103,8 @@ class DNN(object):
 
     def add_summary_op(self, sess):
         # TODO accuracy, auc等指标
-        self.acc1 = self.evaluate_op(self.logits, self.y_input, 'acc')
-        self.acc2 = self.eval_op(self.logits, self.y_input)
-        self.auc = self.evaluate_op(self.logits, self.y_input, 'auc')
-        tf.summary.scalar('acc1', self.acc1)
-        tf.summary.scalar('acc2', self.acc2)
-        tf.summary.scalar('auc', self.auc)
+        self.accuracy = self.eval_op(self.y_scores, self.y_input)
+        tf.summary.scalar('accuracy', self.accuracy)
         tf.summary.scalar('loss', self.loss)
         self.merged = tf.summary.merge_all()
         self.file_writer = tf.summary.FileWriter(self.save_path + 'summary/', sess.graph)  # 保存图像
@@ -117,29 +114,32 @@ class DNN(object):
 
         :return:
         """
+        print('training ...')
         saver = tf.train.Saver(tf.global_variables())
         with tf.Session() as sess:  # session config
-            self.add_summary_op(sess)
             sess.run(self.init_op)  # variable init op
+            self.add_summary_op(sess)
             for epoch in range(self.epoch_num):
                 num_batches = (len(train_dataset) + self.batch_size - 1)//self.batch_size
-                # start_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
                 batches = batch_yield(train_dataset, self.batch_size, shuffle=True)
-                for i, (X_inputs, labels) in enumerate(batches):
+                for i, (X, labels) in enumerate(batches):
                     sys.stdout.write(' processing: {} batch / {} batches.'.format(i + 1, num_batches) + '\r')  # 回到行首
                     feed_dict = {
-                        self.nodepair_input: X_inputs[:, :2],
-                        self.X_input: X_inputs[:, 2:],
+                        self.nodepair_input: X[:, :2],
+                        self.X_input: X[:, 2:],
                         self.y_input: labels
                     }
                     _train_op, _loss, _merged, _step = sess.run([self.train_op, self.loss, self.merged, self.global_step],
                                                                 feed_dict=feed_dict)
-                    self.file_writer.add_summary(_merged, _step)  # add summary
-                    if i + 1 == num_batches:  # one epoch
-                        saver.save(sess, self.save_path + '/model-', _step)
-                    acc1, acc2, auc = sess.run([self.acc1, self.acc2, self.auc])
-                    print("batch:%s, acc1: %s, acc2: %s, auc: %s" % (i, acc1, acc2, auc))
+                    if i % 10 == 0:
+                        self.file_writer.add_summary(_merged, _step)  # add summary
+                    if i % 100 == 0:
+                        accuracy = sess.run(self.accuracy, feed_dict=feed_dict)
+                        print('\n epoch: %s, loss: %s, acc: %s' % (epoch+1, _loss, accuracy))
+                    if i + 1 == num_batches:  # one epoch, save the model
+                        saver.save(sess, self.save_path + '/model', _step)
                 self.test(test_dataset, sess)
+            print('training done.')
 
     def evaluate_op(self, logits, labels, mode):
         """Evaluate the quality of the logits at predicting the label.
@@ -153,39 +153,46 @@ class DNN(object):
         with tf.name_scope("evaluate_batch"):
             if mode == 'acc':
                 predictions = tf.nn.sigmoid(logits)
-                _, accuracy = tf.metrics.accuracy(tf.argmax(labels, 1), tf.argmax(predictions, 1))
+                _, accuracy = tf.metrics.accuracy(tf.argmax(labels, 1), tf.argmax(predictions, 1), name='accuracy')
                 return accuracy
             if mode == 'auc':
                 predictions = tf.nn.sigmoid(logits)
-                _, auc = tf.metrics.auc(labels, predictions)
+                _, auc = tf.metrics.auc(labels, predictions, name='auc')
                 return auc
 
-    def eval_op(self, logits, labels):
+    def eval_op(self, y_scores, labels):
         """
 
-        :param logits: logits output of MLP, without softmax
-        :param labels: labels, not one-hot
+        :param y_scores: softmax scores output of MLP
+        :param labels: labels, one-hot
         :return:
         """
-        correct_predictions = tf.equal(tf.argmax(logits, 1), tf.argmax(labels, 1))
+        correct_predictions = tf.equal(tf.argmax(y_scores, 1), tf.argmax(labels, 1))
         accuracy = tf.reduce_mean(tf.cast(correct_predictions, tf.float32), name='accuracy')
         return accuracy
 
     def test(self, test_dataset, sess):
         batches = batch_yield(test_dataset, self.batch_size, shuffle=True)
         labels_list = []
-        preds_list = []
-        for i, (X_inputs, labels) in enumerate(batches):
+        scores_list = []
+        for i, (X, labels) in enumerate(batches):
             feed_dict = {
-                self.nodepair_input: X_inputs[:, :2],
-                self.X_input: X_inputs[:, 2:],
+                self.nodepair_input: X[:, :2],
+                self.X_input: X[:, 2:],
                 self.y_input: labels
             }
-            predictions = sess.run([self.y], feed_dict=feed_dict)
-            preds_list.extend(list(predictions[:, 0]))
+            y_scores = sess.run(self.y_scores, feed_dict=feed_dict)
+            scores_list.extend(list(np.asarray(y_scores)[:, 0]))
             labels_list.extend(list(labels[:, 0]))
-        auc = self.auc_test(labels_list, preds_list)
-        print(auc)
+        y_pred = (np.array(scores_list) > 0.5).astype('int')
+        accuracy = accuracy_score(labels_list, y_pred)
+        precision = precision_score(labels_list, y_pred)
+        recall = recall_score(labels_list, y_pred)
+        f1 = f1_score(labels_list, y_pred)
+        auc = roc_auc_score(labels_list, scores_list)
+        auc2 = self.auc_test(labels_list, scores_list)
+        print('\n ==test== accuracy: %s, precision: %s, recall: %s, f1: %s, auc: %s, auc2: %s' % (accuracy, precision, recall,
+                                                                                        f1, auc, auc2))
 
     def auc_test(self, y_true, y_pred):
         y_tmp = np.array(y_pred)

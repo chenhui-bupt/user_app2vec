@@ -11,11 +11,11 @@ def train_test_split(file, train_size):
     with open(file, errors='ignore') as f:
         f.readline()
         for line in f:
-            splits = line.split(',')
+            inputs = list(map(float, line.split(',')))
             if random.random() < train_size:
-                train_dataset.append(list(map(float, splits)))
+                train_dataset.append(inputs)
             else:
-                test_dataset.append(list(map(float, splits)))
+                test_dataset.append(inputs)
     return train_dataset, test_dataset
 
 
@@ -75,12 +75,12 @@ def batch_yield(data, batch_size, shuffle=False):
     """
     if shuffle:  # 对数据进行shuffle
         random.shuffle(data)
-    feats, labels = [], []
+    X, labels = [], []
     for d in data:
-        feats.append(d[:-1])
+        X.append(d[:-1])
         labels.append(int(d[-1]))
-        if len(feats) == batch_size:  # 当其够一个batch时，就yield出去
-            yield np.array(feats), to_categorical(np.array(labels), num_class=2)
-            feats, labels = [], []
-    if len(feats) != 0:  # 最后不能整除的余数部分，也要yield
-        yield np.array(feats), to_categorical(np.array(labels), num_class=2)
+        if len(X) == batch_size:  # 当其够一个batch时，就yield出去
+            yield np.array(X), to_categorical(np.array(labels), num_class=2)
+            X, labels = [], []
+    if len(X) != 0:  # 最后不能整除的余数部分，也要yield
+        yield np.array(X), to_categorical(np.array(labels), num_class=2)
