@@ -19,7 +19,7 @@ def train_test_split(file, train_size):
     return train_dataset, test_dataset
 
 
-def get_embeddings(file_name, node2id=None):  # 每个节点的embedding向量，给dnn的lookup用
+def get_embeddings(file_name, node2id):  # 每个节点的embedding向量，给dnn的lookup用
     """
     embeddings的节点有的存成id, 有的是名称需要node2id
     :param file_name: embeddings file
@@ -33,8 +33,10 @@ def get_embeddings(file_name, node2id=None):  # 每个节点的embedding向量�
         embeddings = np.zeros(shape)
         for line in f:
             splits = line.split()
-            if node2id:
-                embeddings[node2id[splits[0]][0]] = list(map(float, splits[1:]))
+            if line.startswith('金山'):
+                embeddings[node2id[' '.join(splits[:2])][0]] = list(map(float, splits[2:]))
+            elif splits[0] in node2id:
+                embeddings[node2id[splits[0]][0]] = list(map(float, splits[-128:]))
             else:
                 embeddings[int(splits[0])] = list(map(float, splits[1:]))
     return embeddings
