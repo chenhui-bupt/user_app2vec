@@ -42,3 +42,11 @@ python main_py.py ../graph_resources/edges4hin2vec.txt node_vectors.txt metapath
 
 ## 3. recommendation system
 推荐系统旨在对用户在每个时刻（小时）推荐App，整个过程包括数据处理，训练集的构建，dnn模型，训练预测，评估等。
+``` 
+1. python data_process.py
+根据原始日志数据，负采样构建正负样本集。添加特征：用户上一时刻使用的App，App的下载量，分数等。
+2. python data_generate.py
+切分训练集和测试集，分批喂给神经网络模型。
+3. python main.py
+构建神经网络推荐模型，训练并在测试集上评估模型。
+```
