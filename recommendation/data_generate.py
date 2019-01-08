@@ -34,9 +34,9 @@ def get_embeddings(file_name, node2id):  # 每个节点的embedding向量，给d
         for line in f:
             splits = line.split()
             if line.startswith('金山'):
-                embeddings[node2id[' '.join(splits[:2])][0]] = list(map(float, splits[2:]))
+                embeddings[node2id['金山WPS OFFICE手机版'][0]] = list(map(float, splits[2:]))
             elif splits[0] in node2id:
-                embeddings[node2id[splits[0]][0]] = list(map(float, splits[-128:]))
+                embeddings[node2id[splits[0]][0]] = list(map(float, splits[1:]))
             else:
                 embeddings[int(splits[0])] = list(map(float, splits[1:]))
     return embeddings

@@ -238,3 +238,4 @@ if __name__ == '__main__':
     node2id(data, True)
     all_data = generateTrainData(data)
     all_data.to_csv('./data/all_data.csv', index=False)
+    #TODO 存成.npy格式

@@ -21,6 +21,9 @@ network_embedding/derby.log
 network_embedding/deepwalk
 network_embedding/hin2vec
 
+# visualization
+visualization/output
+
 # recommendation
 recommendation/output/*
 recommendation/data/*
