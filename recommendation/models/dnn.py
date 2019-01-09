@@ -32,7 +32,7 @@ class DNN(object):
 
     def add_placeholders(self):
         self.nodepair_input = tf.placeholder(tf.int32, [None, 2], name='nodepair_input')  # user-app pair
-        self.X_input = tf.placeholder(tf.float32, [None, 179], name='X_input')
+        self.X_input = tf.placeholder(tf.float32, [None, 202], name='X_input')
         self.y_input = tf.placeholder(tf.float32, [None, self.num_classes], name='y_input')  # y是labels，不是onehot形式
 
     def lookup_input(self):
@@ -138,6 +138,8 @@ class DNN(object):
                         print('\n epoch: %s, loss: %s, acc: %s' % (epoch+1, _loss, accuracy))
                     if i + 1 == num_batches:  # one epoch, save the model
                         saver.save(sess, self.save_path + '/model', _step)
+                    if (i+1) % 300 == 0:
+                        self.test(test_dataset, sess)
                 self.test(test_dataset, sess)
             print('training done.')
 

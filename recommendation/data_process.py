@@ -207,6 +207,7 @@ def generateTrainData(data):
     last_apps = multihotEncoding(last_apps, 'last_apps')
     all_data = pd.merge(all_data, last_apps, on=['id', 'hour'], how='left')
     all_data.fillna(0, inplace=True)  # fill na
+    all_data = pd.get_dummies(all_data, prefix='hour', columns=['hour'])
 
     # 3, add app category feature and other App attribute information
     app_attribute = get_app_attribute(data)
@@ -238,4 +239,3 @@ if __name__ == '__main__':
     node2id(data, True)
     all_data = generateTrainData(data)
     all_data.to_csv('./data/all_data.csv', index=False)
-    #TODO 存成.npy格式
